@@ -224,6 +224,90 @@ dialog {
   cursor: pointer;
 }
 
+.place-option {
+  grid-template-columns: 76px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+}
+
+.place-thumb {
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  overflow: hidden;
+  border-radius: 11px;
+  color: var(--blue);
+  background: var(--blue-soft);
+}
+
+.place-thumb img,
+.receiver-image,
+.saved-candidate > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.place-thumb i {
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.place-content {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.place-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.place-meta,
+.place-description {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.place-description {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.place-rating,
+.receiver-rating {
+  color: #f59f00;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.place-rating small {
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+.reservation-badge {
+  flex: none;
+  padding: 3px 6px;
+  border-radius: 6px;
+  color: var(--blue);
+  background: var(--blue-soft);
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.place-arrow {
+  color: var(--text-tertiary);
+  font-size: 22px;
+}
+
 .source-options span,
 .place-option span,
 .place-results p,
@@ -243,6 +327,47 @@ dialog {
   display: grid;
   gap: 5px;
   padding-top: 5px;
+}
+
+.saved-candidate > img {
+  flex: 0 0 54px;
+  width: 54px;
+  height: 54px;
+  border-radius: 11px;
+}
+
+.saved-candidate small {
+  color: #f59f00;
+  font-size: 11px;
+}
+
+.receiver-image {
+  height: 180px;
+  margin: -20px -20px 18px;
+  width: calc(100% + 40px);
+  border-radius: 20px 20px 0 0;
+}
+
+.receiver-title {
+  position: relative;
+}
+
+.receiver-title .reservation-badge {
+  margin-left: auto;
+}
+
+.receiver-rating {
+  margin: 12px 0 0;
+}
+
+.review-summary {
+  margin: 12px 0;
+  padding: 12px;
+  border-radius: 10px;
+  color: var(--text-secondary);
+  background: var(--field);
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 .candidate-mini input,
