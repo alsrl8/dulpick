@@ -1,0 +1,141 @@
+html,
+body,
+#app {
+  width: 100%;
+  min-height: 100%;
+  min-height: 100dvh;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+.flow-shell,
+.receiver-shell {
+  width: 100%;
+  max-width: 720px;
+  height: 100svh;
+  height: 100dvh;
+  min-height: 100svh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
+}
+
+.flow-shell {
+  display: flex;
+  flex-direction: column;
+}
+
+.flow-shell > .step {
+  flex: 1;
+}
+
+.bottom-actions {
+  width: 100%;
+  max-width: 720px;
+}
+
+button,
+.next-button {
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  touch-action: manipulation;
+  transform: translateZ(0);
+  transition: transform 160ms cubic-bezier(.2, .8, .2, 1), box-shadow 180ms ease, background-color 180ms ease, color 180ms ease;
+}
+
+button::before,
+.next-button::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: var(--pointer-x, 50%);
+  top: var(--pointer-y, 50%);
+  width: 140%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,.34) 0, rgba(255,255,255,.12) 34%, transparent 68%);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(.35);
+  transition: opacity 180ms ease, transform 300ms ease;
+}
+
+button:hover::before,
+.next-button:hover::before,
+button.is-pressing::before,
+.next-button.is-pressing::before {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+button:hover,
+.next-button:hover {
+  transform: translateY(-2px);
+}
+
+button.is-pressing,
+.next-button.is-pressing,
+button:active,
+.next-button:active {
+  transform: translateY(1px) scale(.975);
+  transition-duration: 70ms;
+}
+
+.next-button:hover,
+.pick-button.picked:hover {
+  box-shadow: 0 9px 24px rgba(49, 130, 246, .28);
+}
+
+.chip:hover,
+.quick-row button:hover,
+.back-button:hover,
+.pick-button:not(.picked):hover {
+  background: #e8ebee;
+  box-shadow: 0 5px 14px rgba(25, 31, 40, .08);
+}
+
+button:focus-visible,
+.next-button:focus-visible {
+  outline: 3px solid rgba(49, 130, 246, .28);
+  outline-offset: 3px;
+}
+
+@media (max-height: 700px) {
+  .step { padding-top: 30px; }
+  .step-body { margin-top: 25px; }
+  .flow-brand { height: 56px; }
+}
+
+@media (min-width: 721px) {
+  body { background: #f4f6f8; }
+  .flow-shell,
+  .receiver-shell {
+    background: #fff;
+    box-shadow: 0 0 50px rgba(25, 31, 40, .08);
+  }
+  .receiver-shell { background: #f7f8fa; }
+}
+
+@media (hover: none) {
+  button:hover,
+  .next-button:hover { transform: none; }
+  .next-button:hover,
+  .pick-button.picked:hover,
+  .chip:hover,
+  .quick-row button:hover,
+  .back-button:hover,
+  .pick-button:not(.picked):hover { box-shadow: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button,
+  .next-button,
+  button::before,
+  .next-button::before { transition: none; }
+}

@@ -1,9 +1,28 @@
 import './style.css'
+import './interaction.css'
 import { createPlan, getPlan, chooseCandidate, isCloudEnabled } from './store.js'
 
 const app = document.querySelector('#app')
 const sharedId = new URLSearchParams(location.search).get('p')
 const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]))
+
+app.addEventListener('pointermove', (event) => {
+  const target = event.target.closest('button, .next-button')
+  if (!target) return
+  const rect = target.getBoundingClientRect()
+  target.style.setProperty('--pointer-x', `${event.clientX - rect.left}px`)
+  target.style.setProperty('--pointer-y', `${event.clientY - rect.top}px`)
+})
+
+app.addEventListener('pointerdown', (event) => {
+  event.target.closest('button, .next-button')?.classList.add('is-pressing')
+})
+
+for (const eventName of ['pointerup', 'pointercancel', 'pointerleave']) {
+  app.addEventListener(eventName, () => {
+    app.querySelectorAll('.is-pressing').forEach((element) => element.classList.remove('is-pressing'))
+  })
+}
 
 const draft = {
   step: 0,
