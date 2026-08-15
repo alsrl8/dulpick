@@ -116,6 +116,11 @@ dialog::backdrop {
     background: linear-gradient(transparent, var(--surface) 14%, var(--surface));
   }
 
+  button::before,
+  .next-button::before {
+    background: radial-gradient(circle, rgba(112, 148, 194, .13) 0, rgba(86, 112, 148, .055) 34%, transparent 60%);
+  }
+
   .chip,
   .quick-row button,
   .back-button,
@@ -138,9 +143,14 @@ dialog::backdrop {
   }
 
   .chip.active:hover {
-    color: #b7d4ff;
-    background: #214a7c;
-    box-shadow: inset 0 0 0 1px #4383d1, 0 5px 14px rgba(49, 130, 246, .16);
+    color: #a8c9f5;
+    background: #1d416d;
+    box-shadow: inset 0 0 0 1px #356da9, 0 4px 12px rgba(20, 61, 110, .12);
+  }
+
+  .next-button:hover,
+  .pick-button.picked:hover {
+    box-shadow: 0 6px 18px rgba(20, 61, 110, .2);
   }
 
   .receiver-reason,
