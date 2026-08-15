@@ -189,6 +189,21 @@ dialog {
   margin-bottom: 20px;
 }
 
+.source-back {
+  margin: 0 0 12px;
+  padding: 0;
+  border: 0;
+  color: var(--blue);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+[hidden] {
+  display: none !important;
+}
+
 .source-options,
 .place-results {
   display: grid;
