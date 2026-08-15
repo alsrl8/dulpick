@@ -124,15 +124,15 @@ function renderStep() {
 }
 
 function candidateEditor(candidate, index) {
-  if (candidate.source === 'dulpick') return `<article class="candidate-mini saved-candidate" data-index="${index}" data-source="dulpick">${candidate.image ? `<img src="${escapeHtml(candidate.image)}" alt="">` : `<span class="candidate-number">${index + 1}</span>`}<div class="candidate-main"><b>${escapeHtml(candidate.name)}</b>${candidate.menu ? `<p>${escapeHtml(candidate.menu)}</p>` : ''}${candidate.rating ? `<small>★ ${escapeHtml(candidate.rating)}${candidate.reviewCount ? ` · 리뷰 ${escapeHtml(candidate.reviewCount)}` : ''}</small>` : ''}${candidateFields(candidate)}</div><button type="button" class="remove-candidate" aria-label="후보 ${index + 1} 삭제">×</button></article>`
+  if (candidate.source === 'dulpick') return `<article class="candidate-mini saved-candidate" data-index="${index}" data-source="dulpick"><div class="saved-media">${candidate.image ? `<img src="${escapeHtml(candidate.image)}" alt="${escapeHtml(candidate.name)}">` : '<span>사진 준비 중</span>'}</div><div class="candidate-main"><div class="saved-heading"><div><b>${escapeHtml(candidate.name)}</b>${candidate.menu ? `<p>${escapeHtml(candidate.menu)}</p>` : ''}</div>${candidate.reservation ? `<i class="reservation-badge">${escapeHtml(candidate.reservation)}</i>` : ''}</div>${candidate.rating ? `<small class="saved-rating">★ ${escapeHtml(candidate.rating)}${candidate.reviewCount ? ` · 리뷰 ${escapeHtml(candidate.reviewCount)}개` : ''}</small>` : ''}${candidate.description || candidate.reason ? `<p class="saved-description">${escapeHtml(candidate.description || candidate.reason)}</p>` : ''}<div class="saved-meta">${candidate.price ? `<span><small>예산</small><b>${escapeHtml(candidate.price)}</b></span>` : ''}${candidate.hours ? `<span><small>영업</small><b>${escapeHtml(candidate.hours)}</b></span>` : ''}</div>${candidate.reviewSummary ? `<p class="saved-review">“${escapeHtml(candidate.reviewSummary)}”</p>` : ''}${candidate.link ? `<a class="saved-link" href="${escapeHtml(candidate.link)}" target="_blank" rel="noreferrer">상세 정보 확인 ↗</a>` : ''}${candidateFields(candidate)}</div><button type="button" class="remove-candidate" aria-label="후보 ${index + 1} 삭제">×</button></article>`
   return `<article class="candidate-mini" data-index="${index}" data-source="direct"><span class="candidate-number">${index + 1}</span><div class="candidate-main"><input name="name" maxlength="50" value="${escapeHtml(candidate.name)}" placeholder="장소 이름"><details><summary>메뉴와 근거도 추가할게요</summary><div class="candidate-details"><input name="menu" maxlength="60" value="${escapeHtml(candidate.menu)}" placeholder="대표 메뉴"><input name="price" maxlength="30" value="${escapeHtml(candidate.price)}" placeholder="2인 예상 금액"><textarea name="reason" maxlength="140" placeholder="추천 이유">${escapeHtml(candidate.reason)}</textarea><input name="link" type="url" value="${escapeHtml(candidate.link)}" placeholder="지도 또는 예약 링크"></div></details></div><button type="button" class="remove-candidate" aria-label="후보 ${index + 1} 삭제">×</button></article>`
 }
 
 function candidateFields(candidate) {
-  return ['name', 'menu', 'price', 'reason', 'link', 'image', 'description', 'rating', 'reviewCount', 'reviewSummary', 'reservation'].map((field) => `<input type="hidden" name="${field}" value="${escapeHtml(candidate[field] ?? '')}">`).join('')
+  return ['placeId', 'name', 'menu', 'price', 'reason', 'link', 'image', 'description', 'rating', 'reviewCount', 'reviewSummary', 'reservation', 'category', 'hours', 'address', 'phone', 'station'].map((field) => `<input type="hidden" name="${field}" value="${escapeHtml(candidate[field] ?? '')}">`).join('')
 }
 
-function placeOption(place) {
+function placeOption(place, selected = false) {
   const rating = place.rating ? `<span class="place-rating">★ ${escapeHtml(place.rating)}${place.reviewCount ? ` <small>리뷰 ${escapeHtml(place.reviewCount)}개</small>` : ''}</span>` : ''
   const reservation = place.reservation ? `<span class="reservation-badge">${escapeHtml(place.reservation)}</span>` : ''
   const facts = [
@@ -140,7 +140,7 @@ function placeOption(place) {
     place.price && `<span><small>예산</small><b>${escapeHtml(place.price)}</b></span>`,
     place.hours && `<span><small>영업</small><b>${escapeHtml(place.hours)}</b></span>`,
   ].filter(Boolean).join('')
-  return `<article class="place-option" data-place="${escapeHtml(place.id)}"><span class="place-thumb">${place.image ? `<img src="${escapeHtml(place.image)}" alt="">` : '<i>둘픽</i>'}</span><div class="place-content"><span class="place-heading"><b>${escapeHtml(place.name)}</b>${reservation}</span><span class="place-meta">${escapeHtml([place.area, place.menu].filter(Boolean).join(' · '))}</span>${rating}<p class="place-description">${escapeHtml(place.description || '장소 설명을 준비하고 있어요.')}</p>${facts ? `<div class="place-facts">${facts}</div>` : ''}${place.reason ? `<p class="pick-reason"><small>둘픽 한줄</small>${escapeHtml(place.reason)}</p>` : ''}${place.reviewSummary ? `<p class="place-review">“${escapeHtml(place.reviewSummary)}”</p>` : ''}<div class="place-actions">${place.link ? `<a href="${escapeHtml(place.link)}" target="_blank" rel="noreferrer">정보 확인 ↗</a>` : '<span></span>'}<button type="button" data-select-place="${escapeHtml(place.id)}">이 후보 추가</button></div></div></article>`
+  return `<article class="place-option ${selected ? 'selected' : ''}" data-place="${escapeHtml(place.id)}"><span class="place-thumb">${place.image ? `<img src="${escapeHtml(place.image)}" alt="">` : '<i>둘픽</i>'}</span><div class="place-content"><span class="place-heading"><b>${escapeHtml(place.name)}</b>${reservation}</span><span class="place-meta">${escapeHtml([place.area, place.menu].filter(Boolean).join(' · '))}</span>${rating}<p class="place-description">${escapeHtml(place.description || '장소 설명을 준비하고 있어요.')}</p>${facts ? `<div class="place-facts">${facts}</div>` : ''}${place.reason ? `<p class="pick-reason"><small>둘픽 한줄</small>${escapeHtml(place.reason)}</p>` : ''}${place.reviewSummary ? `<p class="place-review">“${escapeHtml(place.reviewSummary)}”</p>` : ''}<div class="place-actions">${place.link ? `<a href="${escapeHtml(place.link)}" target="_blank" rel="noreferrer">정보 확인 ↗</a>` : '<span></span>'}<button type="button" class="${selected ? 'selected' : ''}" data-select-place="${escapeHtml(place.id)}">${selected ? '추가됨 ✓' : '이 후보 추가'}</button></div></div></article>`
 }
 
 function bindStep(key) {
@@ -195,14 +195,27 @@ function bindStep(key) {
     results.innerHTML = '<p>둘픽 후보를 불러오는 중…</p>'
     try {
       const places = await getPlaces(draft.districts)
-      const guide = `<div class="choice-guide"><b>이 기준으로 비교해보세요</b><div>${[draft.budget, ...draft.moods, ...draft.avoids.map((item) => `${item} 제외`)].map((item) => `<span>${escapeHtml(item)}</span>`).join('')}</div><small>가격 · 분위기 · 리뷰 · 예약 정보를 차례로 확인하면 쉬워요.</small></div>`
-      results.innerHTML = places.length ? guide + places.map(placeOption).join('') : '<p>이 지역에 저장된 후보가 아직 없어요.</p>'
+      const directCandidates = draft.candidates.filter((candidate) => candidate.source !== 'dulpick')
+      const selectedPlaces = new Map(draft.candidates.filter((candidate) => candidate.source === 'dulpick' && candidate.placeId).map((candidate) => [candidate.placeId, candidate]))
+      const renderPlaces = () => {
+        results.innerHTML = places.length ? places.map((place) => placeOption(place, selectedPlaces.has(place.id))).join('') + `<div class="place-selection-bar"><span><b>${selectedPlaces.size}</b>개 선택 · 최대 ${5 - directCandidates.length}개</span><button type="button" id="complete-place-selection">선택 완료</button></div>` : '<p>이 지역에 저장된 후보가 아직 없어요.</p>'
+        bindPlaceSelection()
+      }
+      const bindPlaceSelection = () => {
       results.querySelectorAll('[data-select-place]').forEach((button) => button.addEventListener('click', () => {
         const place = places.find((item) => item.id === button.dataset.selectPlace)
-        audit('candidate_added', { source: 'dulpick' })
-        if (place && draft.candidates.length < 5) draft.candidates.push({ source: 'dulpick', name: place.name || '', menu: place.menu || '', price: place.price || '', reason: place.reason || '', link: place.link || '', image: place.image || '', description: place.description || '', rating: place.rating || '', reviewCount: place.reviewCount || '', reviewSummary: place.reviewSummary || '', reservation: place.reservation || '' })
-        renderStep()
+        if (!place) return
+        if (selectedPlaces.has(place.id)) selectedPlaces.delete(place.id)
+        else if (selectedPlaces.size < 5 - directCandidates.length) selectedPlaces.set(place.id, { source: 'dulpick', placeId: place.id, name: place.name || '', menu: place.menu || '', price: place.price || '', reason: place.reason || '', link: place.link || '', image: place.image || '', description: place.description || '', rating: place.rating || '', reviewCount: place.reviewCount || '', reviewSummary: place.reviewSummary || '', reservation: place.reservation || '', category: place.category || '', hours: place.hours || '', address: place.address || '', phone: place.phone || '', station: place.station || '' })
+        renderPlaces()
       }))
+        results.querySelector('#complete-place-selection')?.addEventListener('click', () => {
+          draft.candidates = [...directCandidates, ...selectedPlaces.values()]
+          audit('candidate_added', { source: 'dulpick' })
+          renderStep()
+        })
+      }
+      renderPlaces()
     } catch { results.innerHTML = '<p>후보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.</p>' }
   })
   document.querySelector('#source-back')?.addEventListener('click', () => {
