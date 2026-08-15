@@ -1,0 +1,161 @@
+:root {
+  color-scheme: light dark;
+  --surface: #ffffff;
+  --surface-subtle: #f7f8fa;
+  --surface-raised: #ffffff;
+  --field: #f2f4f6;
+  --field-hover: #e8ebee;
+  --text: #191f28;
+  --text-secondary: #6b7684;
+  --text-tertiary: #8b95a1;
+  --divider: #e5e8eb;
+  --overlay: rgba(25, 31, 40, .45);
+  --shadow: rgba(25, 31, 40, .08);
+}
+
+body,
+.flow-shell {
+  color: var(--text);
+  background: var(--surface);
+}
+
+.receiver-shell {
+  background: var(--surface-subtle);
+}
+
+.flow-brand a,
+.step h1,
+.success-screen h1,
+.receiver-head h1,
+.loading b,
+.hero-input input,
+.simple-fields input,
+.simple-fields textarea,
+.candidate-mini input,
+.candidate-mini textarea,
+dialog {
+  color: var(--text);
+}
+
+.flow-brand span,
+.step-description,
+.success-screen > p,
+.receiver-title p,
+.loading,
+.make-own,
+.restart,
+.privacy-note,
+.quick-row span,
+.candidate-mini summary {
+  color: var(--text-secondary);
+}
+
+.progress,
+.quick-row button,
+.chip,
+.simple-fields input,
+.simple-fields textarea,
+.candidate-mini,
+.back-button,
+.pick-button,
+.share-box {
+  background: var(--field);
+}
+
+.candidate-mini input,
+.candidate-mini textarea,
+.receiver-card,
+.receiver-head blockquote,
+.share-box button,
+.add-row {
+  background: var(--surface-raised);
+}
+
+.hero-input input {
+  border-color: var(--divider);
+}
+
+.receiver-meta {
+  border-color: var(--divider);
+}
+
+dialog::backdrop {
+  background: var(--overlay);
+}
+
+@media (min-width: 721px) {
+  body { background: var(--surface-subtle); }
+  .flow-shell { background: var(--surface); }
+  .receiver-shell { background: var(--surface-subtle); }
+  .flow-shell,
+  .receiver-shell { box-shadow: 0 0 50px var(--shadow); }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #f2f4f6;
+    --sub: #aeb6bf;
+    --faint: #252a31;
+    --line: #343b44;
+    --blue: #5b9cff;
+    --blue-soft: #18385f;
+    --surface: #17191d;
+    --surface-subtle: #101216;
+    --surface-raised: #22262c;
+    --field: #252a31;
+    --field-hover: #30363e;
+    --text: #f2f4f6;
+    --text-secondary: #aeb6bf;
+    --text-tertiary: #8b95a1;
+    --divider: #343b44;
+    --overlay: rgba(0, 0, 0, .7);
+    --shadow: rgba(0, 0, 0, .35);
+  }
+
+  .bottom-actions {
+    background: linear-gradient(transparent, var(--surface) 14%, var(--surface));
+  }
+
+  .chip,
+  .quick-row button,
+  .back-button,
+  .pick-button:not(.picked) {
+    color: #c7cdd4;
+  }
+
+  .chip:not(.active):hover,
+  .quick-row button:hover,
+  .back-button:hover,
+  .pick-button:not(.picked):hover {
+    background: var(--field-hover);
+  }
+
+  .chip.active,
+  .chip.active:focus-visible {
+    color: #8abbff;
+    background: #18385f;
+    box-shadow: inset 0 0 0 1px #285d9e;
+  }
+
+  .chip.active:hover {
+    color: #b7d4ff;
+    background: #214a7c;
+    box-shadow: inset 0 0 0 1px #4383d1, 0 5px 14px rgba(49, 130, 246, .16);
+  }
+
+  .receiver-reason,
+  .receiver-head blockquote,
+  .simple-fields label,
+  .receiver-meta,
+  .share-box span {
+    color: var(--text-secondary);
+  }
+
+  .candidate-number {
+    background: #30363e;
+  }
+
+  dialog {
+    background: var(--surface-raised);
+  }
+}

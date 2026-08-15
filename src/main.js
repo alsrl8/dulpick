@@ -1,5 +1,6 @@
 import './style.css'
 import './interaction.css'
+import './theme.css'
 import { createPlan, getPlan, chooseCandidate, isCloudEnabled } from './store.js'
 
 const app = document.querySelector('#app')
@@ -55,7 +56,7 @@ function renderStep() {
   const step = steps[draft.step]
   let body = ''
   if (step.key === 'area') body = `<label class="hero-input"><span class="sr-only">만날 지역</span><input id="area" autocomplete="off" maxlength="30" value="${escapeHtml(draft.area)}" placeholder="예: 마곡나루역"></label><div class="quick-row"><span>최근 많이 찾는 곳</span>${['성수', '강남', '을지로', '마곡'].map((x) => `<button type="button" data-area="${x}">${x}</button>`).join('')}</div>`
-  if (step.key === 'budget') body = chips('budget', ['5만 원 이하', '5만~10만 원', '10만 원 이상', '상관없어요'], draft.budget ? [draft.budget] : [])
+  if (step.key === 'budget') body = chips('budget', ['3만 원 미만', '3~5만 원', '5~7만 원', '7~10만 원', '10만 원 이상'], draft.budget ? [draft.budget] : [])
   if (step.key === 'moods') body = chips('moods', ['조용한', '편안한', '분위기 있는', '활기찬', '대화하기 좋은', '특별한'], draft.moods, true)
   if (step.key === 'avoids') body = chips('avoids', ['술집', '고깃집', '매운 음식', '긴 웨이팅', '시끄러운 곳', '없어요'], draft.avoids, true)
   if (step.key === 'message') body = `<div class="simple-fields"><label>제안서 제목<input id="title" maxlength="60" value="${escapeHtml(draft.title || `${draft.area} 약속 후보`)}"></label><label>한마디<textarea id="message" maxlength="160" placeholder="몇 군데 골라봤어요. 마음에 드는 곳을 알려주세요 :) ">${escapeHtml(draft.message)}</textarea></label></div>`
