@@ -2,136 +2,110 @@ import './style.css'
 import { createPlan, getPlan, chooseCandidate, isCloudEnabled } from './store.js'
 
 const app = document.querySelector('#app')
-const params = new URLSearchParams(location.search)
-const sharedId = params.get('p')
-
+const sharedId = new URLSearchParams(location.search).get('p')
 const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]))
 
-const candidateFields = (index, data = {}) => `
-  <article class="candidate-editor" data-index="${index}">
-    <div class="editor-head"><span class="number">${index + 1}</span><button type="button" class="text-button remove">삭제</button></div>
-    <label>장소 이름<input name="name" required maxlength="50" value="${escapeHtml(data.name)}" placeholder="예: 로마옥 마곡"></label>
-    <div class="field-row">
-      <label>대표 메뉴<input name="menu" maxlength="60" value="${escapeHtml(data.menu)}" placeholder="예: 전복 게우 파스타"></label>
-      <label>2인 예상 금액<input name="price" maxlength="30" value="${escapeHtml(data.price)}" placeholder="예: 6만~9만 원"></label>
-    </div>
-    <label>추천 이유<textarea name="reason" maxlength="140" placeholder="분위기, 거리, 리뷰 등의 근거를 적어주세요">${escapeHtml(data.reason)}</textarea></label>
-    <label>지도 또는 예약 링크<input name="link" type="url" value="${escapeHtml(data.link)}" placeholder="https://"></label>
-  </article>`
-
-function renderCreator() {
-  app.innerHTML = `
-    <main class="shell">
-      <header class="brand"><a href="./">둘픽</a><span class="mode">${isCloudEnabled ? 'Cloud' : 'Link mode'}</span></header>
-      <section class="intro">
-        <p class="eyebrow">둘이 고르는 가장 쉬운 방법</p>
-        <h1>약속 후보를<br>한 장으로 보내세요.</h1>
-        <p>장소와 근거를 정리하면 상대방이 링크에서 바로 고를 수 있어요.</p>
-      </section>
-      <form id="plan-form">
-        <section class="panel">
-          <h2>약속 정보</h2>
-          <label>제안서 제목<input name="title" required maxlength="60" placeholder="예: 토요일 저녁 후보"></label>
-          <div class="field-row">
-            <label>지역<input name="area" required maxlength="30" placeholder="마곡·발산"></label>
-            <label>예산<input name="budget" maxlength="30" placeholder="2인 10만 원 이하"></label>
-          </div>
-          <label>전하고 싶은 말<textarea name="message" maxlength="160" placeholder="몇 군데 골라봤어요. 마음에 드는 곳을 알려주세요 :) "></textarea></label>
-        </section>
-        <section class="candidate-section">
-          <div class="section-head"><div><p class="eyebrow">CHOICES</p><h2>장소 후보</h2></div><button type="button" id="add-candidate" class="outline-button">+ 후보 추가</button></div>
-          <div id="candidate-list">
-            ${candidateFields(0)}${candidateFields(1)}${candidateFields(2)}
-          </div>
-        </section>
-        <label class="notice-check"><input type="checkbox" required><span><b>필수 정보 처리 안내를 확인했습니다.</b><small>제안서 생성과 선택 기록을 위해 익명 ID, 약속 후보, 선택 결과를 처리합니다. 이름과 전화번호는 수집하지 않습니다.</small></span></label>
-        <button class="primary-button" type="submit">공유 링크 만들기</button>
-        <p id="form-status" class="status" role="status"></p>
-      </form>
-      <footer><button class="text-button" data-dialog="privacy">개인정보 처리 안내</button><span>둘픽 MVP</span></footer>
-    </main>
-    <dialog id="privacy"><button class="dialog-close" aria-label="닫기">×</button><h2>개인정보 처리 안내</h2><p>둘픽은 서비스 제공을 위해 익명 사용자 ID, 작성한 약속 정보, 후보와 선택 결과, 생성·수정 시각을 처리합니다.</p><p>이름, 전화번호, 정확한 현재 위치는 요구하지 않습니다. 현재 Link mode에서는 내용이 공유 URL에 포함되며, Cloud mode에서는 Firebase에 저장됩니다.</p></dialog>`
-
-  bindCreator()
+const draft = {
+  step: 0,
+  area: '',
+  budget: '',
+  moods: [],
+  avoids: [],
+  title: '',
+  message: '',
+  candidates: [{ name: '', menu: '', price: '', reason: '', link: '' }, { name: '', menu: '', price: '', reason: '', link: '' }, { name: '', menu: '', price: '', reason: '', link: '' }],
 }
 
-function bindCreator() {
-  const list = document.querySelector('#candidate-list')
-  const reindex = () => [...list.children].forEach((card, index) => { card.dataset.index = index; card.querySelector('.number').textContent = index + 1 })
-  document.querySelector('#add-candidate').addEventListener('click', () => {
-    if (list.children.length >= 5) return
-    list.insertAdjacentHTML('beforeend', candidateFields(list.children.length))
-  })
-  list.addEventListener('click', (event) => {
-    if (!event.target.classList.contains('remove') || list.children.length <= 2) return
-    event.target.closest('.candidate-editor').remove(); reindex()
-  })
-  document.querySelector('#plan-form').addEventListener('submit', async (event) => {
-    event.preventDefault()
-    const button = event.submitter
-    const status = document.querySelector('#form-status')
-    button.disabled = true; button.textContent = '링크 만드는 중…'
-    try {
-      const form = new FormData(event.currentTarget)
-      const candidates = [...list.children].map((card) => Object.fromEntries(new FormData(card.querySelector ? wrapCard(card) : card))).filter((item) => item.name)
-      if (candidates.length < 2) throw new Error('후보를 두 곳 이상 입력해주세요.')
-      const plan = { title: form.get('title'), area: form.get('area'), budget: form.get('budget'), message: form.get('message'), candidates }
-      const url = await createPlan(plan)
-      await navigator.clipboard.writeText(url).catch(() => {})
-      status.innerHTML = `링크를 복사했어요.<br><a href="${url}">공유 페이지 확인하기</a>`
-      button.textContent = '링크 복사 완료'
-    } catch (error) {
-      status.textContent = error.message; button.disabled = false; button.textContent = '공유 링크 만들기'
+const steps = [
+  { key: 'area', title: '어디서 만나요?', description: '지역이나 가까운 역을 알려주세요.' },
+  { key: 'budget', title: '예산은 어느 정도가 좋아요?', description: '두 명이 함께 쓰는 금액으로 골라주세요.' },
+  { key: 'moods', title: '어떤 분위기가 좋아요?', description: '여러 개 골라도 괜찮아요.' },
+  { key: 'avoids', title: '피하고 싶은 곳이 있나요?', description: '실패할 가능성이 있는 후보를 먼저 뺄게요.' },
+  { key: 'message', title: '어떻게 전할까요?', description: '받는 사람에게 보일 제목과 한마디예요.' },
+  { key: 'candidates', title: '후보를 알려주세요', description: '지금은 장소 이름만 입력해도 충분해요.' },
+]
+
+function shell(content, options = {}) {
+  const progress = options.progress === false ? '' : `<div class="progress"><i style="width:${((draft.step + 1) / steps.length) * 100}%"></i></div>`
+  return `<main class="flow-shell"><header class="flow-brand"><a href="./">둘픽</a><span>${isCloudEnabled ? '안전하게 저장 중' : '링크로 저장 중'}</span></header>${progress}${content}</main>`
+}
+
+const chips = (name, values, selected, multiple = false) => `<div class="chip-grid">${values.map((value) => `<button type="button" class="chip ${selected.includes(value) ? 'active' : ''}" data-chip="${name}" data-value="${value}" data-multiple="${multiple}">${value}</button>`).join('')}</div>`
+
+function renderStep() {
+  const step = steps[draft.step]
+  let body = ''
+  if (step.key === 'area') body = `<label class="hero-input"><span class="sr-only">만날 지역</span><input id="area" autocomplete="off" maxlength="30" value="${escapeHtml(draft.area)}" placeholder="예: 마곡나루역"></label><div class="quick-row"><span>최근 많이 찾는 곳</span>${['성수', '강남', '을지로', '마곡'].map((x) => `<button type="button" data-area="${x}">${x}</button>`).join('')}</div>`
+  if (step.key === 'budget') body = chips('budget', ['5만 원 이하', '5만~10만 원', '10만 원 이상', '상관없어요'], draft.budget ? [draft.budget] : [])
+  if (step.key === 'moods') body = chips('moods', ['조용한', '편안한', '분위기 있는', '활기찬', '대화하기 좋은', '특별한'], draft.moods, true)
+  if (step.key === 'avoids') body = chips('avoids', ['술집', '고깃집', '매운 음식', '긴 웨이팅', '시끄러운 곳', '없어요'], draft.avoids, true)
+  if (step.key === 'message') body = `<div class="simple-fields"><label>제안서 제목<input id="title" maxlength="60" value="${escapeHtml(draft.title || `${draft.area} 약속 후보`)}"></label><label>한마디<textarea id="message" maxlength="160" placeholder="몇 군데 골라봤어요. 마음에 드는 곳을 알려주세요 :) ">${escapeHtml(draft.message)}</textarea></label></div>`
+  if (step.key === 'candidates') body = `<div id="candidate-list" class="simple-candidates">${draft.candidates.map(candidateEditor).join('')}</div><button type="button" id="add-candidate" class="add-row">+ 후보 추가하기</button><p class="privacy-note">익명 ID와 약속·선택 정보만 저장해요. 이름과 전화번호는 받지 않아요. <button type="button" id="privacy-open">자세히</button></p>`
+
+  app.innerHTML = shell(`<section class="step"><p class="step-count">${draft.step + 1} / ${steps.length}</p><h1>${step.title}</h1><p class="step-description">${step.description}</p><div class="step-body">${body}</div></section><nav class="bottom-actions">${draft.step ? '<button type="button" id="back" class="back-button">이전</button>' : ''}<button type="button" id="next" class="next-button">${draft.step === steps.length - 1 ? '링크 만들기' : '다음'}</button></nav><p id="flow-status" class="flow-status"></p><dialog id="privacy"><button class="dialog-close" aria-label="닫기">×</button><h2>저장하는 정보</h2><p>제안서와 선택을 다시 확인할 수 있도록 익명 사용자 ID, 약속 후보, 선택 결과와 처리 시각을 Firebase에 저장해요.</p><p>이름, 전화번호, 정확한 현재 위치는 수집하지 않아요.</p></dialog>`)
+  bindStep(step.key)
+}
+
+function candidateEditor(candidate, index) {
+  return `<article class="candidate-mini" data-index="${index}"><span class="candidate-number">${index + 1}</span><div class="candidate-main"><input name="name" maxlength="50" value="${escapeHtml(candidate.name)}" placeholder="장소 이름"><details><summary>메뉴와 근거도 추가할게요</summary><div class="candidate-details"><input name="menu" maxlength="60" value="${escapeHtml(candidate.menu)}" placeholder="대표 메뉴"><input name="price" maxlength="30" value="${escapeHtml(candidate.price)}" placeholder="2인 예상 금액"><textarea name="reason" maxlength="140" placeholder="추천 이유">${escapeHtml(candidate.reason)}</textarea><input name="link" type="url" value="${escapeHtml(candidate.link)}" placeholder="지도 또는 예약 링크"></div></details></div>${draft.candidates.length > 2 ? `<button type="button" class="remove-candidate" aria-label="후보 ${index + 1} 삭제">×</button>` : ''}</article>`
+}
+
+function bindStep(key) {
+  const save = () => {
+    if (key === 'area') draft.area = document.querySelector('#area').value.trim()
+    if (key === 'message') { draft.title = document.querySelector('#title').value.trim(); draft.message = document.querySelector('#message').value.trim() }
+    if (key === 'candidates') draft.candidates = [...document.querySelectorAll('.candidate-mini')].map((card) => Object.fromEntries([...card.querySelectorAll('input, textarea')].map((field) => [field.name, field.value.trim()])))
+  }
+  document.querySelector('#back')?.addEventListener('click', () => { save(); draft.step--; renderStep() })
+  document.querySelector('#next').addEventListener('click', async () => {
+    save(); const status = document.querySelector('#flow-status')
+    if (key === 'area' && !draft.area) return showError(status, '만날 지역을 입력해주세요.')
+    if (key === 'budget' && !draft.budget) return showError(status, '예산을 하나 골라주세요.')
+    if (key === 'moods' && !draft.moods.length) return showError(status, '원하는 분위기를 하나 이상 골라주세요.')
+    if (key === 'message' && !draft.title) return showError(status, '제안서 제목을 입력해주세요.')
+    if (key === 'candidates') {
+      const candidates = draft.candidates.filter((item) => item.name)
+      if (candidates.length < 2) return showError(status, '후보를 두 곳 이상 입력해주세요.')
+      const button = document.querySelector('#next'); button.disabled = true; button.textContent = '링크 만드는 중…'
+      try { return renderSuccess(await createPlan({ title: draft.title, area: draft.area, budget: draft.budget, moods: draft.moods, avoids: draft.avoids, message: draft.message, candidates })) } catch (error) { button.disabled = false; button.textContent = '링크 만들기'; return showError(status, error.message) }
     }
+    draft.step++; renderStep()
   })
-  bindDialog()
+  document.querySelectorAll('[data-chip]').forEach((button) => button.addEventListener('click', () => {
+    const keyName = button.dataset.chip; const value = button.dataset.value
+    if (button.dataset.multiple === 'true') {
+      if (value === '없어요') draft[keyName] = draft[keyName].includes(value) ? [] : ['없어요']
+      else { draft[keyName] = draft[keyName].filter((x) => x !== '없어요'); draft[keyName] = draft[keyName].includes(value) ? draft[keyName].filter((x) => x !== value) : [...draft[keyName], value] }
+    } else draft[keyName] = value
+    renderStep()
+  }))
+  document.querySelectorAll('[data-area]').forEach((button) => button.addEventListener('click', () => { draft.area = button.dataset.area; renderStep() }))
+  document.querySelector('#add-candidate')?.addEventListener('click', () => { save(); if (draft.candidates.length < 5) draft.candidates.push({ name: '', menu: '', price: '', reason: '', link: '' }); renderStep() })
+  document.querySelector('#candidate-list')?.addEventListener('click', (event) => { if (!event.target.classList.contains('remove-candidate')) return; save(); draft.candidates.splice(Number(event.target.closest('.candidate-mini').dataset.index), 1); renderStep() })
+  const dialog = document.querySelector('#privacy'); document.querySelector('#privacy-open')?.addEventListener('click', () => dialog.showModal()); dialog.querySelector('.dialog-close').addEventListener('click', () => dialog.close())
 }
 
-function wrapCard(card) {
-  const form = document.createElement('form')
-  form.append(...[...card.querySelectorAll('input, textarea')].map((el) => el.cloneNode(true)))
-  return form
+function showError(target, text) { target.textContent = text; target.classList.add('show') }
+
+function renderSuccess(url) {
+  navigator.clipboard.writeText(url).catch(() => {})
+  app.innerHTML = shell(`<section class="success-screen"><div class="success-icon">✓</div><h1>보낼 준비가 끝났어요</h1><p>링크를 열면 상대방이 후보를 고를 수 있어요.</p><div class="share-box"><span>${escapeHtml(url)}</span><button id="copy">복사</button></div><a class="next-button preview-link" href="${url}">받는 화면 확인하기</a><button class="restart" onclick="location.href='./'">새로 만들기</button></section>`, { progress: false })
+  document.querySelector('#copy').addEventListener('click', async (event) => { await navigator.clipboard.writeText(url); event.target.textContent = '복사했어요' })
 }
 
 function renderPlan(plan, id) {
-  app.innerHTML = `
-    <main class="shell shared">
-      <header class="brand"><a href="./">둘픽</a><span class="mode">선택하기</span></header>
-      <section class="shared-head"><p class="eyebrow">${escapeHtml(plan.area)} · ${escapeHtml(plan.budget)}</p><h1>${escapeHtml(plan.title)}</h1>${plan.message ? `<p class="message">“${escapeHtml(plan.message)}”</p>` : ''}<p class="helper">마음에 드는 곳을 하나 골라주세요.</p></section>
-      <section class="choice-list">
-        ${plan.candidates.map((candidate, index) => `
-          <article class="choice-card">
-            <div class="choice-top"><span class="number">${index + 1}</span><div><h2>${escapeHtml(candidate.name)}</h2><p>${escapeHtml(candidate.menu || '대표 메뉴 확인')}</p></div></div>
-            <p class="reason">${escapeHtml(candidate.reason || '후보로 골라둔 장소예요.')}</p>
-            <div class="facts"><span>${escapeHtml(candidate.price || '가격 확인')}</span>${candidate.link ? `<a href="${escapeHtml(candidate.link)}" target="_blank" rel="noreferrer">지도·예약 ↗</a>` : ''}</div>
-            <button class="select-button ${plan.selection === index ? 'selected' : ''}" data-choice="${index}">${plan.selection === index ? '선택했어요 ✓' : '여기가 좋아요'}</button>
-          </article>`).join('')}
-      </section>
-      <p id="choice-status" class="status" role="status">${plan.selection !== undefined ? '선택이 저장되어 있어요.' : ''}</p>
-      <a class="secondary-link" href="./">나도 후보 만들어보기</a>
-      <footer><button class="text-button" data-dialog="privacy">개인정보 처리 안내</button><span>둘픽 MVP</span></footer>
-    </main>
-    <dialog id="privacy"><button class="dialog-close" aria-label="닫기">×</button><h2>선택 정보 안내</h2><p>선택 결과와 익명 참여자 ID가 제안서에 저장됩니다. 이름과 연락처는 수집하지 않습니다.</p></dialog>`
-  document.querySelector('.choice-list').addEventListener('click', async (event) => {
+  app.innerHTML = `<main class="receiver-shell"><header class="flow-brand"><a href="./">둘픽</a><span>하나만 골라주세요</span></header><section class="receiver-head"><p>${escapeHtml(plan.area)} · ${escapeHtml(plan.budget)}</p><h1>${escapeHtml(plan.title)}</h1>${plan.message ? `<blockquote>${escapeHtml(plan.message)}</blockquote>` : ''}</section><section class="receiver-list">${plan.candidates.map((candidate, index) => `<article class="receiver-card"><div class="receiver-title"><span>${index + 1}</span><div><h2>${escapeHtml(candidate.name)}</h2>${candidate.menu ? `<p>${escapeHtml(candidate.menu)}</p>` : ''}</div></div>${candidate.reason ? `<p class="receiver-reason">${escapeHtml(candidate.reason)}</p>` : ''}<div class="receiver-meta">${candidate.price ? `<b>${escapeHtml(candidate.price)}</b>` : '<b>가격 확인</b>'}${candidate.link ? `<a href="${escapeHtml(candidate.link)}" target="_blank" rel="noreferrer">지도 보기 ↗</a>` : ''}</div><button class="pick-button ${plan.selection === index ? 'picked' : ''}" data-choice="${index}">${plan.selection === index ? '선택했어요 ✓' : '여기가 좋아요'}</button></article>`).join('')}</section><p id="choice-status" class="choice-status">${plan.selection !== undefined ? '선택이 저장되어 있어요.' : ''}</p><a class="make-own" href="./">나도 후보 만들어보기</a></main>`
+  document.querySelector('.receiver-list').addEventListener('click', async (event) => {
     const button = event.target.closest('[data-choice]'); if (!button) return
-    document.querySelectorAll('.select-button').forEach((item) => { item.classList.remove('selected'); item.textContent = '여기가 좋아요' })
-    button.classList.add('selected'); button.textContent = '선택했어요 ✓'
-    await chooseCandidate(id, Number(button.dataset.choice), plan)
-    document.querySelector('#choice-status').textContent = '선택을 저장했어요. 이제 이 창을 닫아도 됩니다.'
+    document.querySelectorAll('.pick-button').forEach((item) => { item.classList.remove('picked'); item.textContent = '여기가 좋아요' })
+    button.classList.add('picked'); button.textContent = '선택했어요 ✓'; await chooseCandidate(id, Number(button.dataset.choice), plan); document.querySelector('#choice-status').textContent = '선택을 저장했어요.'
   })
-  bindDialog()
-}
-
-function bindDialog() {
-  const dialog = document.querySelector('#privacy')
-  document.querySelector('[data-dialog="privacy"]').addEventListener('click', () => dialog.showModal())
-  dialog.querySelector('.dialog-close').addEventListener('click', () => dialog.close())
 }
 
 async function start() {
-  if (!sharedId) return renderCreator()
+  if (!sharedId) return renderStep()
   app.innerHTML = '<div class="loading">둘픽을 불러오는 중…</div>'
-  try { renderPlan(await getPlan(sharedId), sharedId) } catch { app.innerHTML = '<div class="loading"><b>제안서를 열 수 없어요.</b><p>링크가 잘렸거나 만료되었을 수 있습니다.</p><a href="./">새로 만들기</a></div>' }
+  try { renderPlan(await getPlan(sharedId), sharedId) } catch { app.innerHTML = '<div class="loading"><b>제안서를 열 수 없어요.</b><p>링크가 잘렸거나 만료되었을 수 있어요.</p><a href="./">새로 만들기</a></div>' }
 }
 
 start()
