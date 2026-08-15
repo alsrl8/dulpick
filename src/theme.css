@@ -94,6 +94,54 @@ dialog {
   font-weight: 500;
 }
 
+.schedule-field {
+  display: grid;
+  gap: 10px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.schedule-field input {
+  width: 100%;
+  padding: 16px;
+  border: 0;
+  border-radius: 14px;
+  color: var(--text);
+  background: var(--field);
+  font-size: 16px;
+}
+
+.resume-screen {
+  display: grid;
+  align-content: center;
+  min-height: calc(100dvh - 150px);
+}
+
+.resume-screen h1 {
+  margin: 0 0 28px;
+  color: var(--text);
+  font-size: 30px;
+  letter-spacing: -.05em;
+}
+
+.resume-card {
+  display: grid;
+  gap: 8px;
+  padding: 20px;
+  border-radius: 20px;
+  background: var(--field);
+}
+
+.resume-card span {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.resume-card .next-button {
+  margin-top: 12px;
+}
+
 .candidate-empty {
   margin: 0;
   padding: 28px 16px;

@@ -6,6 +6,27 @@ import { createPlan, getPlan, getPlaces, chooseCandidate, isCloudEnabled } from 
 const app = document.querySelector('#app')
 const sharedId = new URLSearchParams(location.search).get('p')
 const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]))
+const recentPlanKey = 'dulpick.recentPlan'
+
+function rememberPlan(id, scheduledAt) {
+  if (!id || id.startsWith('local.') || !scheduledAt) return
+  const expiresAt = new Date(new Date(scheduledAt).getTime() + 24 * 60 * 60 * 1000).toISOString()
+  localStorage.setItem(recentPlanKey, JSON.stringify({ id, expiresAt, savedAt: new Date().toISOString() }))
+}
+
+function getRememberedPlan() {
+  try {
+    const recent = JSON.parse(localStorage.getItem(recentPlanKey))
+    if (!recent?.id || !recent.expiresAt || Date.now() >= new Date(recent.expiresAt).getTime()) {
+      localStorage.removeItem(recentPlanKey)
+      return null
+    }
+    return recent
+  } catch {
+    localStorage.removeItem(recentPlanKey)
+    return null
+  }
+}
 
 app.addEventListener('pointermove', (event) => {
   const target = event.target.closest('button, .next-button')
@@ -28,6 +49,7 @@ for (const eventName of ['pointerup', 'pointercancel', 'pointerleave']) {
 const draft = {
   step: 0,
   area: '',
+  scheduledAt: '',
   budget: '',
   moods: [],
   avoids: [],
@@ -39,6 +61,7 @@ const draft = {
 
 const steps = [
   { key: 'area', title: '어디서 만나요?', description: '지역이나 가까운 역을 알려주세요.' },
+  { key: 'schedule', title: '언제 만나요?', description: '이 날짜가 지나고 하루 뒤 안전하게 삭제돼요.' },
   { key: 'budget', title: '예산은 어느 정도가 좋아요?', description: '두 명이 함께 쓰는 금액으로 골라주세요.' },
   { key: 'moods', title: '어떤 분위기가 좋아요?', description: '여러 개 골라도 괜찮아요.' },
   { key: 'avoids', title: '피하고 싶은 곳이 있나요?', description: '실패할 가능성이 있는 후보를 먼저 뺄게요.' },
@@ -64,6 +87,7 @@ function renderStep() {
   const step = steps[draft.step]
   let body = ''
   if (step.key === 'area') body = `<label class="hero-input"><span class="sr-only">만날 지역</span><input id="area" autocomplete="off" maxlength="30" value="${escapeHtml(draft.area)}" placeholder="예: 마곡나루역"></label><div class="quick-row"><span>최근 많이 찾는 곳</span>${['성수', '강남', '을지로', '마곡'].map((x) => `<button type="button" data-area="${x}">${x}</button>`).join('')}</div>`
+  if (step.key === 'schedule') body = `<label class="schedule-field"><span>예약 날짜와 시간</span><input id="scheduled-at" type="datetime-local" required value="${escapeHtml(draft.scheduledAt)}"></label>`
   if (step.key === 'budget') body = chips('budget', ['3만 원 미만', '3~5만 원', '5~7만 원', '7~10만 원', '10만 원 이상'], draft.budget ? [draft.budget] : [])
   if (step.key === 'moods') body = chips('moods', ['조용한', '편안한', '분위기 있는', '활기찬', '대화하기 좋은', '특별한'], draft.moods, true)
   if (step.key === 'avoids') body = chips('avoids', ['술집', '고깃집', '매운 음식', '긴 웨이팅', '시끄러운 곳', '없어요'], draft.avoids, true)
@@ -82,6 +106,7 @@ function candidateEditor(candidate, index) {
 function bindStep(key) {
   const save = () => {
     if (key === 'area') draft.area = document.querySelector('#area').value.trim()
+    if (key === 'schedule') draft.scheduledAt = document.querySelector('#scheduled-at').value
     if (key === 'message') { draft.title = document.querySelector('#title').value.trim(); draft.message = document.querySelector('#message').value.trim() }
     if (key === 'candidates') draft.candidates = [...document.querySelectorAll('.candidate-mini')].map((card) => ({ source: card.dataset.source, ...Object.fromEntries([...card.querySelectorAll('input, textarea')].map((field) => [field.name, field.value.trim()])) }))
   }
@@ -89,6 +114,8 @@ function bindStep(key) {
   document.querySelector('#next').addEventListener('click', async () => {
     save(); const status = document.querySelector('#flow-status')
     if (key === 'area' && !draft.area) return showError(status, '만날 지역을 입력해주세요.')
+    if (key === 'schedule' && !draft.scheduledAt) return showError(status, '예약 날짜와 시간을 입력해주세요.')
+    if (key === 'schedule' && new Date(draft.scheduledAt).getTime() <= Date.now()) return showError(status, '지금 이후의 날짜와 시간을 골라주세요.')
     if (key === 'budget' && !draft.budget) return showError(status, '예산을 하나 골라주세요.')
     if (key === 'moods' && !draft.moods.length) return showError(status, '원하는 분위기를 하나 이상 골라주세요.')
     if (key === 'message' && !draft.title) return showError(status, '제안서 제목을 입력해주세요.')
@@ -96,7 +123,7 @@ function bindStep(key) {
       const candidates = draft.candidates.filter((item) => item.name)
       if (candidates.length < 2) return showError(status, '후보를 두 곳 이상 입력해주세요.')
       const button = document.querySelector('#next'); button.disabled = true; button.textContent = '링크 만드는 중…'
-      try { return renderSuccess(await createPlan({ title: draft.title, area: draft.area, budget: draft.budget, moods: draft.moods, avoids: draft.avoids, message: draft.message, candidates })) } catch (error) { button.disabled = false; button.textContent = '링크 만들기'; return showError(status, error.message) }
+      try { return renderSuccess(await createPlan({ title: draft.title, area: draft.area, scheduledAt: draft.scheduledAt, budget: draft.budget, moods: draft.moods, avoids: draft.avoids, message: draft.message, candidates })) } catch (error) { button.disabled = false; button.textContent = '링크 만들기'; return showError(status, error.message) }
     }
     draft.step++; renderStep()
   })
@@ -140,12 +167,15 @@ function bindStep(key) {
 function showError(target, text) { target.textContent = text; target.classList.add('show') }
 
 function renderSuccess(url) {
+  const id = new URL(url).searchParams.get('p')
+  rememberPlan(id, draft.scheduledAt)
   navigator.clipboard.writeText(url).catch(() => {})
   app.innerHTML = shell(`<section class="success-screen"><div class="success-icon">✓</div><h1>보낼 준비가 끝났어요</h1><p>링크를 열면 상대방이 후보를 고를 수 있어요.</p><div class="share-box"><span>${escapeHtml(url)}</span><button id="copy">복사</button></div><a class="next-button preview-link" href="${url}">받는 화면 확인하기</a><button class="restart" onclick="location.href='./'">새로 만들기</button></section>`, { progress: false })
   document.querySelector('#copy').addEventListener('click', async (event) => { await navigator.clipboard.writeText(url); event.target.textContent = '복사했어요' })
 }
 
 function renderPlan(plan, id) {
+  rememberPlan(id, plan.scheduledAt)
   app.innerHTML = `<main class="receiver-shell"><header class="flow-brand"><a href="./">둘픽</a><span>하나만 골라주세요</span></header><section class="receiver-head"><p>${escapeHtml(plan.area)} · ${escapeHtml(plan.budget)}</p><h1>${escapeHtml(plan.title)}</h1>${plan.message ? `<blockquote>${escapeHtml(plan.message)}</blockquote>` : ''}</section><section class="receiver-list">${plan.candidates.map((candidate, index) => `<article class="receiver-card"><div class="receiver-title"><span>${index + 1}</span><div><h2>${escapeHtml(candidate.name)}</h2>${candidate.menu ? `<p>${escapeHtml(candidate.menu)}</p>` : ''}</div></div>${candidate.reason ? `<p class="receiver-reason">${escapeHtml(candidate.reason)}</p>` : ''}<div class="receiver-meta">${candidate.price ? `<b>${escapeHtml(candidate.price)}</b>` : '<b>가격 확인</b>'}${candidate.link ? `<a href="${escapeHtml(candidate.link)}" target="_blank" rel="noreferrer">지도 보기 ↗</a>` : ''}</div><button class="pick-button ${plan.selection === index ? 'picked' : ''}" data-choice="${index}">${plan.selection === index ? '선택했어요 ✓' : '여기가 좋아요'}</button></article>`).join('')}</section><p id="choice-status" class="choice-status">${plan.selection !== undefined ? '선택이 저장되어 있어요.' : ''}</p><a class="make-own" href="./">나도 후보 만들어보기</a></main>`
   document.querySelector('.receiver-list').addEventListener('click', async (event) => {
     const button = event.target.closest('[data-choice]'); if (!button) return
@@ -154,8 +184,19 @@ function renderPlan(plan, id) {
   })
 }
 
+function renderResume(plan, id) {
+  const date = new Date(plan.scheduledAt)
+  const dateText = Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat('ko-KR', { month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(date)
+  app.innerHTML = shell(`<section class="resume-screen"><p class="step-count">최근 작업</p><h1>이어서 확인할까요?</h1><article class="resume-card"><b>${escapeHtml(plan.title)}</b><span>${escapeHtml([dateText, plan.area].filter(Boolean).join(' · '))}</span><a class="next-button preview-link" href="?p=${escapeHtml(id)}">선택 내용 확인하기</a></article><button type="button" id="new-plan" class="restart">새 제안서 만들기</button></section>`, { progress: false })
+  document.querySelector('#new-plan').addEventListener('click', renderStep)
+}
+
 async function start() {
-  if (!sharedId) return renderStep()
+  if (!sharedId) {
+    const recent = getRememberedPlan()
+    if (!recent) return renderStep()
+    try { return renderResume(await getPlan(recent.id), recent.id) } catch { localStorage.removeItem(recentPlanKey); return renderStep() }
+  }
   app.innerHTML = '<div class="loading">둘픽을 불러오는 중…</div>'
   try { renderPlan(await getPlan(sharedId), sharedId) } catch { app.innerHTML = '<div class="loading"><b>제안서를 열 수 없어요.</b><p>링크가 잘렸거나 만료되었을 수 있어요.</p><a href="./">새로 만들기</a></div>' }
 }

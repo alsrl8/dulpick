@@ -23,7 +23,8 @@ const ensureAuth = async () => auth.currentUser || (await signInAnonymously(auth
 export async function createPlan(plan) {
   if (!isCloudEnabled) return `${location.origin}${location.pathname}?p=local.${encode(plan)}`
   const user = await ensureAuth()
-  const ref = await addDoc(collection(db, 'plans'), { ...plan, ownerId: user.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp(), status: 'shared' })
+  const expiresAt = new Date(new Date(plan.scheduledAt).getTime() + 24 * 60 * 60 * 1000)
+  const ref = await addDoc(collection(db, 'plans'), { ...plan, expiresAt, ownerId: user.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp(), status: 'shared' })
   return `${location.origin}${location.pathname}?p=${ref.id}`
 }
 
