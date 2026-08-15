@@ -198,7 +198,7 @@ function bindStep(key) {
       const directCandidates = draft.candidates.filter((candidate) => candidate.source !== 'dulpick')
       const selectedPlaces = new Map(draft.candidates.filter((candidate) => candidate.source === 'dulpick' && candidate.placeId).map((candidate) => [candidate.placeId, candidate]))
       const renderPlaces = () => {
-        results.innerHTML = places.length ? places.map((place) => placeOption(place, selectedPlaces.has(place.id))).join('') + `<div class="place-selection-bar"><span><b>${selectedPlaces.size}</b>개 선택 · 최대 ${5 - directCandidates.length}개</span><button type="button" id="complete-place-selection">선택 완료</button></div>` : '<p>이 지역에 저장된 후보가 아직 없어요.</p>'
+        results.innerHTML = places.length ? places.map((place) => placeOption(place, selectedPlaces.has(place.id))).join('') + `<div class="place-selection-bar"><span>전체 후보 <b>${directCandidates.length + selectedPlaces.size}/5개</b></span><button type="button" id="complete-place-selection">선택한 후보 적용하기</button></div>` : '<p>이 지역에 저장된 후보가 아직 없어요.</p>'
         bindPlaceSelection()
       }
       const bindPlaceSelection = () => {
