@@ -1,7 +1,7 @@
 import './style.css'
 import './interaction.css'
 import './theme.css'
-import { createPlan, getPlan, chooseCandidate, isCloudEnabled } from './store.js'
+import { createPlan, getPlan, getPlaces, chooseCandidate, isCloudEnabled } from './store.js'
 
 const app = document.querySelector('#app')
 const sharedId = new URLSearchParams(location.search).get('p')
@@ -34,7 +34,7 @@ const draft = {
   title: '',
   message: '',
   templateIndex: -1,
-  candidates: [{ name: '', menu: '', price: '', reason: '', link: '' }, { name: '', menu: '', price: '', reason: '', link: '' }, { name: '', menu: '', price: '', reason: '', link: '' }],
+  candidates: [],
 }
 
 const steps = [
@@ -68,21 +68,22 @@ function renderStep() {
   if (step.key === 'moods') body = chips('moods', ['조용한', '편안한', '분위기 있는', '활기찬', '대화하기 좋은', '특별한'], draft.moods, true)
   if (step.key === 'avoids') body = chips('avoids', ['술집', '고깃집', '매운 음식', '긴 웨이팅', '시끄러운 곳', '없어요'], draft.avoids, true)
   if (step.key === 'message') body = `<button type="button" id="suggest-message" class="template-button"><span>문구 추천받기</span><small>누를 때마다 다른 문구를 보여드려요</small></button><div class="simple-fields"><label><span>제안서 제목 <em>필수</em></span><input id="title" maxlength="60" required value="${escapeHtml(draft.title || `${draft.area} 약속 후보`)}"></label><label><span>한마디 <em>선택</em></span><textarea id="message" maxlength="160" placeholder="상대방에게 전할 말을 적어주세요.">${escapeHtml(draft.message)}</textarea></label></div>`
-  if (step.key === 'candidates') body = `<div id="candidate-list" class="simple-candidates">${draft.candidates.map(candidateEditor).join('')}</div><button type="button" id="add-candidate" class="add-row">+ 후보 추가하기</button><p class="privacy-note">익명 ID와 약속·선택 정보만 저장해요. 이름과 전화번호는 받지 않아요. <button type="button" id="privacy-open">자세히</button></p>`
+  if (step.key === 'candidates') body = `<div id="candidate-list" class="simple-candidates">${draft.candidates.length ? draft.candidates.map(candidateEditor).join('') : '<p class="candidate-empty">아직 추가한 후보가 없어요.</p>'}</div><button type="button" id="add-candidate" class="add-row">+ 후보 추가하기</button><p class="privacy-note">익명 ID와 약속·선택 정보만 저장해요. 이름과 전화번호는 받지 않아요. <button type="button" id="privacy-open">자세히</button></p><dialog id="candidate-source" class="candidate-source"><button class="dialog-close" aria-label="닫기">×</button><h2>어떻게 추가할까요?</h2><div class="source-options"><button type="button" id="from-dulpick"><b>둘픽에서 찾기</b><span>저장된 장소를 빠르게 골라요</span></button><button type="button" id="from-direct"><b>직접 입력</b><span>장소 이름부터 간단히 적어요</span></button></div><div id="place-results" class="place-results"></div></dialog>`
 
   app.innerHTML = shell(`<section class="step"><p class="step-count">${draft.step + 1} / ${steps.length}</p><h1>${step.title}</h1><p class="step-description">${step.description}</p><div class="step-body">${body}</div></section><nav class="bottom-actions">${draft.step ? '<button type="button" id="back" class="back-button">이전</button>' : ''}<button type="button" id="next" class="next-button">${draft.step === steps.length - 1 ? '링크 만들기' : '다음'}</button></nav><p id="flow-status" class="flow-status"></p><dialog id="privacy"><button class="dialog-close" aria-label="닫기">×</button><h2>저장하는 정보</h2><p>제안서와 선택을 다시 확인할 수 있도록 익명 사용자 ID, 약속 후보, 선택 결과와 처리 시각을 Firebase에 저장해요.</p><p>이름, 전화번호, 정확한 현재 위치는 수집하지 않아요.</p></dialog>`)
   bindStep(step.key)
 }
 
 function candidateEditor(candidate, index) {
-  return `<article class="candidate-mini" data-index="${index}"><span class="candidate-number">${index + 1}</span><div class="candidate-main"><input name="name" maxlength="50" value="${escapeHtml(candidate.name)}" placeholder="장소 이름"><details><summary>메뉴와 근거도 추가할게요</summary><div class="candidate-details"><input name="menu" maxlength="60" value="${escapeHtml(candidate.menu)}" placeholder="대표 메뉴"><input name="price" maxlength="30" value="${escapeHtml(candidate.price)}" placeholder="2인 예상 금액"><textarea name="reason" maxlength="140" placeholder="추천 이유">${escapeHtml(candidate.reason)}</textarea><input name="link" type="url" value="${escapeHtml(candidate.link)}" placeholder="지도 또는 예약 링크"></div></details></div>${draft.candidates.length > 2 ? `<button type="button" class="remove-candidate" aria-label="후보 ${index + 1} 삭제">×</button>` : ''}</article>`
+  if (candidate.source === 'dulpick') return `<article class="candidate-mini saved-candidate" data-index="${index}" data-source="dulpick"><span class="candidate-number">${index + 1}</span><div class="candidate-main"><b>${escapeHtml(candidate.name)}</b>${candidate.menu ? `<p>${escapeHtml(candidate.menu)}</p>` : ''}<input type="hidden" name="name" value="${escapeHtml(candidate.name)}"><input type="hidden" name="menu" value="${escapeHtml(candidate.menu)}"><input type="hidden" name="price" value="${escapeHtml(candidate.price)}"><input type="hidden" name="reason" value="${escapeHtml(candidate.reason)}"><input type="hidden" name="link" value="${escapeHtml(candidate.link)}"></div><button type="button" class="remove-candidate" aria-label="후보 ${index + 1} 삭제">×</button></article>`
+  return `<article class="candidate-mini" data-index="${index}" data-source="direct"><span class="candidate-number">${index + 1}</span><div class="candidate-main"><input name="name" maxlength="50" value="${escapeHtml(candidate.name)}" placeholder="장소 이름"><details><summary>메뉴와 근거도 추가할게요</summary><div class="candidate-details"><input name="menu" maxlength="60" value="${escapeHtml(candidate.menu)}" placeholder="대표 메뉴"><input name="price" maxlength="30" value="${escapeHtml(candidate.price)}" placeholder="2인 예상 금액"><textarea name="reason" maxlength="140" placeholder="추천 이유">${escapeHtml(candidate.reason)}</textarea><input name="link" type="url" value="${escapeHtml(candidate.link)}" placeholder="지도 또는 예약 링크"></div></details></div><button type="button" class="remove-candidate" aria-label="후보 ${index + 1} 삭제">×</button></article>`
 }
 
 function bindStep(key) {
   const save = () => {
     if (key === 'area') draft.area = document.querySelector('#area').value.trim()
     if (key === 'message') { draft.title = document.querySelector('#title').value.trim(); draft.message = document.querySelector('#message').value.trim() }
-    if (key === 'candidates') draft.candidates = [...document.querySelectorAll('.candidate-mini')].map((card) => Object.fromEntries([...card.querySelectorAll('input, textarea')].map((field) => [field.name, field.value.trim()])))
+    if (key === 'candidates') draft.candidates = [...document.querySelectorAll('.candidate-mini')].map((card) => ({ source: card.dataset.source, ...Object.fromEntries([...card.querySelectorAll('input, textarea')].map((field) => [field.name, field.value.trim()])) }))
   }
   document.querySelector('#back')?.addEventListener('click', () => { save(); draft.step--; renderStep() })
   document.querySelector('#next').addEventListener('click', async () => {
@@ -115,9 +116,25 @@ function bindStep(key) {
     draft.message = template.message
     renderStep()
   })
-  document.querySelector('#add-candidate')?.addEventListener('click', () => { save(); if (draft.candidates.length < 5) draft.candidates.push({ name: '', menu: '', price: '', reason: '', link: '' }); renderStep() })
+  const sourceDialog = document.querySelector('#candidate-source')
+  document.querySelector('#add-candidate')?.addEventListener('click', () => { save(); sourceDialog.showModal() })
+  document.querySelector('#from-direct')?.addEventListener('click', () => { save(); if (draft.candidates.length < 5) draft.candidates.push({ source: 'direct', name: '', menu: '', price: '', reason: '', link: '' }); renderStep() })
+  document.querySelector('#from-dulpick')?.addEventListener('click', async () => {
+    const results = document.querySelector('#place-results')
+    results.innerHTML = '<p>둘픽 후보를 불러오는 중…</p>'
+    try {
+      const places = await getPlaces(draft.area)
+      results.innerHTML = places.length ? places.map((place) => `<button type="button" class="place-option" data-place="${escapeHtml(place.id)}"><b>${escapeHtml(place.name)}</b><span>${escapeHtml([place.area, place.menu].filter(Boolean).join(' · '))}</span></button>`).join('') : '<p>이 지역에 저장된 후보가 아직 없어요.</p>'
+      results.querySelectorAll('[data-place]').forEach((button) => button.addEventListener('click', () => {
+        const place = places.find((item) => item.id === button.dataset.place)
+        if (place && draft.candidates.length < 5) draft.candidates.push({ source: 'dulpick', name: place.name || '', menu: place.menu || '', price: place.price || '', reason: place.reason || '', link: place.link || '' })
+        renderStep()
+      }))
+    } catch { results.innerHTML = '<p>후보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.</p>' }
+  })
   document.querySelector('#candidate-list')?.addEventListener('click', (event) => { if (!event.target.classList.contains('remove-candidate')) return; save(); draft.candidates.splice(Number(event.target.closest('.candidate-mini').dataset.index), 1); renderStep() })
   const dialog = document.querySelector('#privacy'); document.querySelector('#privacy-open')?.addEventListener('click', () => dialog.showModal()); dialog.querySelector('.dialog-close').addEventListener('click', () => dialog.close())
+  sourceDialog?.querySelector('.dialog-close').addEventListener('click', () => sourceDialog.close())
 }
 
 function showError(target, text) { target.textContent = text; target.classList.add('show') }

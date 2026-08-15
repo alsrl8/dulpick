@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app'
 import { getAuth, signInAnonymously } from 'firebase/auth'
-import { getFirestore, addDoc, collection, doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore'
+import { getFirestore, addDoc, collection, doc, getDoc, getDocs, limit, query, updateDoc, serverTimestamp } from 'firebase/firestore'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -39,4 +39,14 @@ export async function chooseCandidate(id, selection, plan) {
   if (id.startsWith('local.')) { plan.selection = selection; return }
   await ensureAuth()
   await updateDoc(doc(db, 'plans', id), { selection, selectedAt: serverTimestamp(), updatedAt: serverTimestamp() })
+}
+
+export async function getPlaces(area = '') {
+  if (!isCloudEnabled) return []
+  await ensureAuth()
+  const snapshot = await getDocs(query(collection(db, 'places'), limit(30)))
+  const keyword = area.trim().toLowerCase()
+  return snapshot.docs
+    .map((place) => ({ id: place.id, ...place.data() }))
+    .filter((place) => !keyword || !place.area || String(place.area).toLowerCase().includes(keyword) || keyword.includes(String(place.area).toLowerCase()))
 }

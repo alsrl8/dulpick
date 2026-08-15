@@ -94,6 +94,61 @@ dialog {
   font-weight: 500;
 }
 
+.candidate-empty {
+  margin: 0;
+  padding: 28px 16px;
+  border: 1px dashed var(--divider);
+  border-radius: 18px;
+  color: var(--text-tertiary);
+  text-align: center;
+  font-size: 13px;
+}
+
+.candidate-source h2 {
+  margin-bottom: 20px;
+}
+
+.source-options,
+.place-results {
+  display: grid;
+  gap: 10px;
+}
+
+.source-options button,
+.place-option {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  padding: 16px;
+  border: 0;
+  border-radius: 14px;
+  color: var(--text);
+  background: var(--field);
+  text-align: left;
+  cursor: pointer;
+}
+
+.source-options span,
+.place-option span,
+.place-results p,
+.saved-candidate p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.place-results {
+  max-height: 300px;
+  margin-top: 16px;
+  overflow-y: auto;
+}
+
+.saved-candidate .candidate-main {
+  display: grid;
+  gap: 5px;
+  padding-top: 5px;
+}
+
 .candidate-mini input,
 .candidate-mini textarea,
 .receiver-card,
