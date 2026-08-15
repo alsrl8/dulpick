@@ -28,6 +28,13 @@ function getRememberedPlan() {
   }
 }
 
+function getDefaultSchedule() {
+  const date = new Date(Date.now() + 30 * 60 * 1000)
+  date.setMinutes(Math.ceil(date.getMinutes() / 30) * 30, 0, 0)
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60 * 1000)
+  return local.toISOString().slice(0, 16)
+}
+
 app.addEventListener('pointermove', (event) => {
   const target = event.target.closest('button, .next-button')
   if (!target) return
@@ -49,7 +56,7 @@ for (const eventName of ['pointerup', 'pointercancel', 'pointerleave']) {
 const draft = {
   step: 0,
   area: '',
-  scheduledAt: '',
+  scheduledAt: getDefaultSchedule(),
   budget: '',
   moods: [],
   avoids: [],
