@@ -50,3 +50,15 @@ export async function getPlaces(districts = []) {
     .map((place) => ({ id: place.id, ...place.data() }))
     .filter((place) => !districts.length || districts.includes(place.district))
 }
+
+export async function writeAuditLog(event, payload = {}) {
+  if (!isCloudEnabled) return
+  const user = await ensureAuth()
+  await addDoc(collection(db, 'auditLogs'), {
+    actorId: user.uid,
+    event,
+    ...payload,
+    occurredAt: serverTimestamp(),
+    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+  })
+}

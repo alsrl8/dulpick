@@ -147,8 +147,9 @@ dialog {
 
 .resume-screen {
   display: grid;
-  align-content: center;
+  align-content: start;
   min-height: calc(100dvh - 150px);
+  padding: 42px 0 40px;
 }
 
 .resume-screen h1 {
@@ -159,20 +160,73 @@ dialog {
 }
 
 .resume-card {
-  display: grid;
-  gap: 8px;
-  padding: 20px;
-  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 16px;
   background: var(--field);
 }
 
+.resume-card > div:first-child {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+
 .resume-card span {
+  overflow: hidden;
   color: var(--text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 13px;
 }
 
-.resume-card .next-button {
-  margin-top: 12px;
+.resume-list {
+  display: grid;
+  gap: 10px;
+}
+
+.resume-status {
+  width: max-content;
+  padding: 3px 7px;
+  border-radius: 6px;
+  color: #8b95a1;
+  background: var(--surface-raised);
+  font-size: 10px;
+}
+
+.resume-status.done {
+  color: var(--blue);
+  background: var(--blue-soft);
+}
+
+.resume-actions {
+  display: grid;
+  flex: none;
+  gap: 7px;
+  text-align: right;
+}
+
+.resume-actions a,
+.resume-actions button {
+  border: 0;
+  color: var(--blue);
+  background: transparent;
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.resume-actions button {
+  color: var(--text-tertiary);
+}
+
+.new-plan-button {
+  width: 100%;
+  margin-top: 14px;
 }
 
 .candidate-empty {
@@ -187,6 +241,11 @@ dialog {
 
 .candidate-source h2 {
   margin-bottom: 20px;
+}
+
+.candidate-source {
+  width: min(calc(100% - 28px), 520px);
+  max-height: min(86dvh, 760px);
 }
 
 .source-back {
@@ -225,8 +284,8 @@ dialog {
 }
 
 .place-option {
-  grid-template-columns: 76px minmax(0, 1fr) auto;
-  align-items: center;
+  grid-template-columns: 76px minmax(0, 1fr);
+  align-items: start;
   gap: 12px;
   padding: 10px;
 }
@@ -278,6 +337,8 @@ dialog {
 .place-description {
   color: var(--text-secondary);
   font-size: 11px;
+  line-height: 1.5;
+  white-space: normal;
 }
 
 .place-rating,
@@ -303,10 +364,11 @@ dialog {
   font-weight: 700;
 }
 
-.place-arrow {
-  color: var(--text-tertiary);
-  font-size: 22px;
-}
+.choice-guide{display:grid;gap:10px;margin-bottom:4px;padding:15px;border-radius:14px;color:var(--text);background:var(--blue-soft)}
+.choice-guide>div{display:flex;flex-wrap:wrap;gap:6px}.choice-guide span{padding:4px 7px;border-radius:7px;color:var(--blue);background:var(--surface-raised);font-size:10px;font-weight:700}.choice-guide small{color:var(--text-secondary);font-size:11px}
+.place-facts{display:grid;gap:7px;margin-top:6px;padding:10px;border-radius:10px;background:var(--surface-raised)}.place-facts span{display:grid;grid-template-columns:38px 1fr;gap:7px}.place-facts small{color:var(--text-tertiary);font-size:10px}.place-facts b{overflow:hidden;color:var(--text-secondary);text-overflow:ellipsis;white-space:nowrap;font-size:10px;font-weight:600}
+.pick-reason,.place-review{margin:6px 0 0;color:var(--text-secondary);font-size:11px;line-height:1.55}.pick-reason small{display:block;margin-bottom:2px;color:var(--blue);font-weight:700}.place-review{padding-left:8px;border-left:2px solid var(--divider)}
+.place-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}.place-actions a{color:var(--text-tertiary);font-size:10px;text-decoration:none}.place-actions button{padding:8px 10px;border:0;border-radius:9px;color:#fff;background:var(--blue);font-size:11px;font-weight:700;cursor:pointer}
 
 .source-options span,
 .place-option span,
@@ -318,10 +380,13 @@ dialog {
 }
 
 .place-results {
-  max-height: 300px;
+  max-height: 58dvh;
   margin-top: 16px;
   overflow-y: auto;
 }
+
+.place-option .place-rating { color: #f59f00; }
+.place-option .reservation-badge { color: var(--blue); }
 
 .saved-candidate .candidate-main {
   display: grid;
