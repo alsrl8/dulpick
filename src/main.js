@@ -33,6 +33,7 @@ const draft = {
   avoids: [],
   title: '',
   message: '',
+  templateIndex: -1,
   candidates: [{ name: '', menu: '', price: '', reason: '', link: '' }, { name: '', menu: '', price: '', reason: '', link: '' }, { name: '', menu: '', price: '', reason: '', link: '' }],
 }
 
@@ -52,6 +53,13 @@ function shell(content, options = {}) {
 
 const chips = (name, values, selected, multiple = false) => `<div class="chip-grid">${values.map((value) => `<button type="button" class="chip ${selected.includes(value) ? 'active' : ''}" data-chip="${name}" data-value="${value}" data-multiple="${multiple}">${value}</button>`).join('')}</div>`
 
+const messageTemplates = () => [
+  { title: `${draft.area} 약속 후보`, message: '몇 군데 골라봤어요. 마음에 드는 곳을 알려주세요 :)' },
+  { title: `${draft.area}, 어디가 좋을까요?`, message: '괜찮아 보이는 곳들로 추려봤어요. 가장 끌리는 곳을 골라주세요!' },
+  { title: '우리 여기서 만나요', message: '편하게 보고 마음에 드는 곳 하나만 골라주세요.' },
+  { title: `${draft.area} 맛집 후보`, message: '메뉴와 분위기를 보고 더 마음에 드는 곳을 알려주세요.' },
+]
+
 function renderStep() {
   const step = steps[draft.step]
   let body = ''
@@ -59,7 +67,7 @@ function renderStep() {
   if (step.key === 'budget') body = chips('budget', ['3만 원 미만', '3~5만 원', '5~7만 원', '7~10만 원', '10만 원 이상'], draft.budget ? [draft.budget] : [])
   if (step.key === 'moods') body = chips('moods', ['조용한', '편안한', '분위기 있는', '활기찬', '대화하기 좋은', '특별한'], draft.moods, true)
   if (step.key === 'avoids') body = chips('avoids', ['술집', '고깃집', '매운 음식', '긴 웨이팅', '시끄러운 곳', '없어요'], draft.avoids, true)
-  if (step.key === 'message') body = `<div class="simple-fields"><label>제안서 제목<input id="title" maxlength="60" value="${escapeHtml(draft.title || `${draft.area} 약속 후보`)}"></label><label>한마디<textarea id="message" maxlength="160" placeholder="몇 군데 골라봤어요. 마음에 드는 곳을 알려주세요 :) ">${escapeHtml(draft.message)}</textarea></label></div>`
+  if (step.key === 'message') body = `<button type="button" id="suggest-message" class="template-button"><span>문구 추천받기</span><small>누를 때마다 다른 문구를 보여드려요</small></button><div class="simple-fields"><label><span>제안서 제목 <em>필수</em></span><input id="title" maxlength="60" required value="${escapeHtml(draft.title || `${draft.area} 약속 후보`)}"></label><label><span>한마디 <em>선택</em></span><textarea id="message" maxlength="160" placeholder="상대방에게 전할 말을 적어주세요.">${escapeHtml(draft.message)}</textarea></label></div>`
   if (step.key === 'candidates') body = `<div id="candidate-list" class="simple-candidates">${draft.candidates.map(candidateEditor).join('')}</div><button type="button" id="add-candidate" class="add-row">+ 후보 추가하기</button><p class="privacy-note">익명 ID와 약속·선택 정보만 저장해요. 이름과 전화번호는 받지 않아요. <button type="button" id="privacy-open">자세히</button></p>`
 
   app.innerHTML = shell(`<section class="step"><p class="step-count">${draft.step + 1} / ${steps.length}</p><h1>${step.title}</h1><p class="step-description">${step.description}</p><div class="step-body">${body}</div></section><nav class="bottom-actions">${draft.step ? '<button type="button" id="back" class="back-button">이전</button>' : ''}<button type="button" id="next" class="next-button">${draft.step === steps.length - 1 ? '링크 만들기' : '다음'}</button></nav><p id="flow-status" class="flow-status"></p><dialog id="privacy"><button class="dialog-close" aria-label="닫기">×</button><h2>저장하는 정보</h2><p>제안서와 선택을 다시 확인할 수 있도록 익명 사용자 ID, 약속 후보, 선택 결과와 처리 시각을 Firebase에 저장해요.</p><p>이름, 전화번호, 정확한 현재 위치는 수집하지 않아요.</p></dialog>`)
@@ -100,6 +108,13 @@ function bindStep(key) {
     renderStep()
   }))
   document.querySelectorAll('[data-area]').forEach((button) => button.addEventListener('click', () => { draft.area = button.dataset.area; renderStep() }))
+  document.querySelector('#suggest-message')?.addEventListener('click', () => {
+    draft.templateIndex = (draft.templateIndex + 1) % messageTemplates().length
+    const template = messageTemplates()[draft.templateIndex]
+    draft.title = template.title
+    draft.message = template.message
+    renderStep()
+  })
   document.querySelector('#add-candidate')?.addEventListener('click', () => { save(); if (draft.candidates.length < 5) draft.candidates.push({ name: '', menu: '', price: '', reason: '', link: '' }); renderStep() })
   document.querySelector('#candidate-list')?.addEventListener('click', (event) => { if (!event.target.classList.contains('remove-candidate')) return; save(); draft.candidates.splice(Number(event.target.closest('.candidate-mini').dataset.index), 1); renderStep() })
   const dialog = document.querySelector('#privacy'); document.querySelector('#privacy-open')?.addEventListener('click', () => dialog.showModal()); dialog.querySelector('.dialog-close').addEventListener('click', () => dialog.close())

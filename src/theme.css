@@ -53,6 +53,7 @@ dialog {
 .progress,
 .quick-row button,
 .chip,
+.template-button,
 .simple-fields input,
 .simple-fields textarea,
 .candidate-mini,
@@ -60,6 +61,37 @@ dialog {
 .pick-button,
 .share-box {
   background: var(--field);
+}
+
+.template-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 24px;
+  padding: 15px 16px;
+  border: 0;
+  border-radius: 14px;
+  color: var(--blue);
+  text-align: left;
+  cursor: pointer;
+}
+
+.template-button span {
+  font-weight: 700;
+}
+
+.template-button small {
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+
+.simple-fields label em {
+  margin-left: 3px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 500;
 }
 
 .candidate-mini input,
@@ -123,6 +155,7 @@ dialog::backdrop {
 
   .chip,
   .quick-row button,
+  .template-button,
   .back-button,
   .pick-button:not(.picked) {
     color: #c7cdd4;
