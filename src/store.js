@@ -42,12 +42,11 @@ export async function chooseCandidate(id, selection, plan) {
   await updateDoc(doc(db, 'plans', id), { selection, selectedAt: serverTimestamp(), updatedAt: serverTimestamp() })
 }
 
-export async function getPlaces(area = '') {
+export async function getPlaces(districts = []) {
   if (!isCloudEnabled) return []
   await ensureAuth()
   const snapshot = await getDocs(query(collection(db, 'places'), limit(30)))
-  const keyword = area.trim().toLowerCase()
   return snapshot.docs
     .map((place) => ({ id: place.id, ...place.data() }))
-    .filter((place) => !keyword || !place.area || String(place.area).toLowerCase().includes(keyword) || keyword.includes(String(place.area).toLowerCase()))
+    .filter((place) => !districts.length || districts.includes(place.district))
 }

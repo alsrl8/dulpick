@@ -55,6 +55,8 @@ for (const eventName of ['pointerup', 'pointercancel', 'pointerleave']) {
 
 const draft = {
   step: 0,
+  city: '성남시',
+  districts: [],
   area: '',
   scheduledAt: getDefaultSchedule(),
   budget: '',
@@ -67,7 +69,7 @@ const draft = {
 }
 
 const steps = [
-  { key: 'area', title: '어디서 만나요?', description: '지역이나 가까운 역을 알려주세요.' },
+  { key: 'area', title: '어디서 만나요?', description: '시를 확인하고 지역을 골라주세요.' },
   { key: 'schedule', title: '언제 만나요?', description: '이 날짜가 지나고 하루 뒤 안전하게 삭제돼요.' },
   { key: 'budget', title: '예산은 어느 정도가 좋아요?', description: '두 명이 함께 쓰는 금액으로 골라주세요.' },
   { key: 'moods', title: '어떤 분위기가 좋아요?', description: '여러 개 골라도 괜찮아요.' },
@@ -93,7 +95,7 @@ const messageTemplates = () => [
 function renderStep() {
   const step = steps[draft.step]
   let body = ''
-  if (step.key === 'area') body = `<label class="hero-input"><span class="sr-only">만날 지역</span><input id="area" autocomplete="off" maxlength="30" value="${escapeHtml(draft.area)}" placeholder="예: 마곡나루역"></label><div class="quick-row"><span>최근 많이 찾는 곳</span>${['성수', '강남', '을지로', '마곡'].map((x) => `<button type="button" data-area="${x}">${x}</button>`).join('')}</div>`
+  if (step.key === 'area') body = `<div class="area-picker"><div><span class="picker-label">시 선택</span><button type="button" class="city-option active" aria-pressed="true">성남시</button></div><div><span class="picker-label">지역 선택 <small>여러 곳 선택 가능</small></span>${chips('districts', ['수정구', '중원구', '분당구'], draft.districts, true)}</div></div>`
   if (step.key === 'schedule') body = `<label class="schedule-field"><span>예약 날짜와 시간</span><input id="scheduled-at" type="datetime-local" required value="${escapeHtml(draft.scheduledAt)}"></label>`
   if (step.key === 'budget') body = chips('budget', ['3만 원 미만', '3~5만 원', '5~7만 원', '7~10만 원', '10만 원 이상'], draft.budget ? [draft.budget] : [])
   if (step.key === 'moods') body = chips('moods', ['조용한', '편안한', '분위기 있는', '활기찬', '대화하기 좋은', '특별한'], draft.moods, true)
@@ -112,7 +114,7 @@ function candidateEditor(candidate, index) {
 
 function bindStep(key) {
   const save = () => {
-    if (key === 'area') draft.area = document.querySelector('#area').value.trim()
+    if (key === 'area') draft.area = [draft.city, draft.districts.join('·')].filter(Boolean).join(' ')
     if (key === 'schedule') draft.scheduledAt = document.querySelector('#scheduled-at').value
     if (key === 'message') { draft.title = document.querySelector('#title').value.trim(); draft.message = document.querySelector('#message').value.trim() }
     if (key === 'candidates') draft.candidates = [...document.querySelectorAll('.candidate-mini')].map((card) => ({ source: card.dataset.source, ...Object.fromEntries([...card.querySelectorAll('input, textarea')].map((field) => [field.name, field.value.trim()])) }))
@@ -120,7 +122,7 @@ function bindStep(key) {
   document.querySelector('#back')?.addEventListener('click', () => { save(); draft.step--; renderStep() })
   document.querySelector('#next').addEventListener('click', async () => {
     save(); const status = document.querySelector('#flow-status')
-    if (key === 'area' && !draft.area) return showError(status, '만날 지역을 입력해주세요.')
+    if (key === 'area' && !draft.districts.length) return showError(status, '지역을 하나 이상 골라주세요.')
     if (key === 'schedule' && !draft.scheduledAt) return showError(status, '예약 날짜와 시간을 입력해주세요.')
     if (key === 'schedule' && new Date(draft.scheduledAt).getTime() <= Date.now()) return showError(status, '지금 이후의 날짜와 시간을 골라주세요.')
     if (key === 'budget' && !draft.budget) return showError(status, '예산을 하나 골라주세요.')
@@ -142,7 +144,6 @@ function bindStep(key) {
     } else draft[keyName] = value
     renderStep()
   }))
-  document.querySelectorAll('[data-area]').forEach((button) => button.addEventListener('click', () => { draft.area = button.dataset.area; renderStep() }))
   document.querySelector('#suggest-message')?.addEventListener('click', () => {
     draft.templateIndex = (draft.templateIndex + 1) % messageTemplates().length
     const template = messageTemplates()[draft.templateIndex]
@@ -157,7 +158,7 @@ function bindStep(key) {
     const results = document.querySelector('#place-results')
     results.innerHTML = '<p>둘픽 후보를 불러오는 중…</p>'
     try {
-      const places = await getPlaces(draft.area)
+      const places = await getPlaces(draft.districts)
       results.innerHTML = places.length ? places.map((place) => `<button type="button" class="place-option" data-place="${escapeHtml(place.id)}"><b>${escapeHtml(place.name)}</b><span>${escapeHtml([place.area, place.menu].filter(Boolean).join(' · '))}</span></button>`).join('') : '<p>이 지역에 저장된 후보가 아직 없어요.</p>'
       results.querySelectorAll('[data-place]').forEach((button) => button.addEventListener('click', () => {
         const place = places.find((item) => item.id === button.dataset.place)

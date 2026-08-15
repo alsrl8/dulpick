@@ -102,6 +102,39 @@ dialog {
   font-weight: 600;
 }
 
+.area-picker {
+  display: grid;
+  gap: 30px;
+}
+
+.area-picker > div {
+  display: grid;
+  gap: 10px;
+}
+
+.picker-label {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.picker-label small {
+  margin-left: 5px;
+  color: var(--text-tertiary);
+  font-weight: 400;
+}
+
+.city-option {
+  width: 100%;
+  min-height: 58px;
+  border: 0;
+  border-radius: 13px;
+  color: var(--blue);
+  background: var(--blue-soft);
+  box-shadow: inset 0 0 0 1px #bcdcff;
+  font-weight: 700;
+}
+
 .schedule-field input {
   width: 100%;
   padding: 16px;
@@ -282,6 +315,13 @@ dialog::backdrop {
     color: #a8c9f5;
     background: #1d416d;
     box-shadow: inset 0 0 0 1px #356da9, 0 4px 12px rgba(20, 61, 110, .12);
+  }
+
+  .city-option,
+  .city-option:hover {
+    color: #8abbff;
+    background: #18385f;
+    box-shadow: inset 0 0 0 1px #285d9e;
   }
 
   .next-button:hover,
